@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# KAVYA OS - System Health & Diagnostics Dashboard (khealth)
+# Monitors: CPU load, RAM usage, Root storage, Zombies, Network interfaces
+
+set -e
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+WHITE='\033[1;37m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+BOLD='\033[1m'
+
+echo -e "${BOLD}${CYAN}=== KAVYA OS: System Health & Diagnostics (khealth) ===${NC}\n"
+
+HEALTH_SCORE=100
+WARNINGS=()
+
+# 1. CPU Load Health
+CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || echo 1)
+LOAD_1M=$(awk '{print $1}' /proc/loadavg 2>/dev/null || echo 0)
+LOAD_INT=${LOAD_1M%.*}
+LOAD_INT=${LOAD_INT:-0}
+
+echo -n "  • CPU Load:           "
+if (( LOAD_INT > CORES * 2 )); then
+    echo -e "${RED}[CRITICAL] Load is $LOAD_1M on $CORES cores${NC}"
+    HEALTH_SCORE=$((HEALTH_SCORE - 30))
+    WARNINGS+=("High CPU load: processes may be starving for CPU time.")
+elif (( LOAD_INT >= CORES )); then
+    echo -e "${YELLOW}[WARNING] Load is $LOAD_1M on $CORES cores${NC}"
+    HEALTH_SCORE=$((HEALTH_SCORE - 10))
+    WARNINGS+=("Moderate CPU saturation: near core capacity.")
+else
+    echo -e "${GREEN}[OPTIMAL] Load is $LOAD_1M on $CORES cores${NC}"
+fi
+
+# 2. RAM Health
+MEM_TOTAL=$(awk '/MemTotal/ {print $2}' /proc/meminfo 2>/dev/null || echo 1)
+MEM_AVAIL=$(awk '/MemAvailable/ {print $2}' /proc/meminfo 2>/dev/null || echo 1)
+MEM_USED=$((MEM_TOTAL - MEM_AVAIL))
+MEM_PCT=$(( (MEM_USED * 100) / MEM_TOTAL ))
+
+echo -n "  • Memory Usage:       "
+if (( MEM_PCT > 90 )); then
+    echo -e "${RED}[CRITICAL] RAM is at ${MEM_PCT}% (${MEM_AVAIL} kB avail)${NC}"
+    HEALTH_SCORE=$((HEALTH_SCORE - 35))
+    WARNINGS+=("Critical RAM pressure: Kernel OOM killer may trigger soon.")
+elif (( MEM_PCT > 75 )); then
+    echo -e "${YELLOW}[ELEVATED] RAM is at ${MEM_PCT}%${NC}"
+    HEALTH_SCORE=$((HEALTH_SCORE - 10))
+    WARNINGS+=("Memory usage is high; close unused background applications.")
+else
+    echo -e "${GREEN}[OPTIMAL] RAM is at ${MEM_PCT}% (${MEM_AVAIL} kB safe)${NC}"
+fi
+
+# 3. Disk Space Health
+DISK_PCT=$(df / 2>/dev/null | awk 'NR==2 {gsub("%",""); print $5}')
+DISK_PCT=${DISK_PCT:-0}
+
+echo -n "  • Root Filesystem (/):"
+if (( DISK_PCT > 90 )); then
+    echo -e "${RED}[CRITICAL] Storage at ${DISK_PCT}% used${NC}"
+    HEALTH_SCORE=$((HEALTH_SCORE - 30))
+    WARNINGS+=("Root storage is nearly full! Clear logs and package cache.")
+elif (( DISK_PCT > 75 )); then
+    echo -e "${YELLOW}[WARNING] Storage at ${DISK_PCT}% used${NC}"
+    HEALTH_SCORE=$((HEALTH_SCORE - 10))
+    WARNINGS+=("Storage partition is above 75% capacity.")
+else
+    echo -e "${GREEN}[OPTIMAL] Storage at ${DISK_PCT}% used${NC}"
+fi
+
+# 4. Zombie Process Check
+ZOMBIES=$(ps -eo stat 2>/dev/null | grep -c '^Z' || true)
+echo -n "  • Defunct/Zombies:    "
+if (( ZOMBIES > 5 )); then
+    echo -e "${RED}[WARNING] $ZOMBIES zombie processes detected${NC}"
+    HEALTH_SCORE=$((HEALTH_SCORE - 15))
+    WARNINGS+=("Multiple zombie processes accumulating; inspect parent processes via 'kps --zombies'.")
+elif (( ZOMBIES > 0 )); then
+    echo -e "${YELLOW}[NOTICE] $ZOMBIES zombie process detected${NC}"
+    HEALTH_SCORE=$((HEALTH_SCORE - 5))
+else
+    echo -e "${GREEN}[CLEAN] 0 zombie processes${NC}"
+fi
+
+# 5. Network Interface Status
+NET_UP=$(ip -br link 2>/dev/null | grep -c 'UP' || echo 0)
+echo -n "  • Active Interfaces:  "
+if (( NET_UP > 0 )); then
+    echo -e "${GREEN}[CONNECTED] $NET_UP interface(s) online${NC}"
+else
+    echo -e "${YELLOW}[DISCONNECTED] No active network links found${NC}"
+fi
+
+echo -e "\n${BLUE}───────────────────────────────────────────────────────${NC}"
+echo -n "  Overall System Score: "
+if (( HEALTH_SCORE >= 85 )); then
+    echo -e "${GREEN}${BOLD}${HEALTH_SCORE} / 100 (EXCELLENT)${NC}"
+elif (( HEALTH_SCORE >= 65 )); then
+    echo -e "${YELLOW}${BOLD}${HEALTH_SCORE} / 100 (FAIR)${NC}"
+else
+    echo -e "${RED}${BOLD}${HEALTH_SCORE} / 100 (NEEDS ATTENTION)${NC}"
+fi
+
+if [[ ${#WARNINGS[@]} -gt 0 ]]; then
+    echo -e "\n${YELLOW}Recommendations:${NC}"
+    for w in "${WARNINGS[@]}"; do
+        echo -e "  ⚠️  $w"
+    done
+fi
+echo ""

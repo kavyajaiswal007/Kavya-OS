@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# KAVYA OS - Process Lifecycle & PCB Inspector (kps)
+# PBL Focus: Process Control Block (PCB), States, Threads vs Processes, /proc filesystem
+
+set -e
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+WHITE='\033[1;37m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+BOLD='\033[1m'
+
+show_help() {
+    echo "Usage: kps [OPTION] [PID]"
+    echo ""
+    echo "Options:"
+    echo "  (no args)    Show process lifecycle breakdown & top processes"
+    echo "  <PID>        Deep-dive into a specific Process Control Block (PCB)"
+    echo "  --tree       Show parent-child process hierarchy (pstree view)"
+    echo "  --zombies    Detect and report zombie/defunct processes"
+    echo "  --help       Show this help message"
+    echo ""
+}
+
+inspect_pid() {
+    local target_pid=$1
+    if [[ ! -d "/proc/$target_pid" ]]; then
+        echo -e "${RED}Error: Process PID $target_pid not found in /proc.${NC}"
+        exit 1
+    fi
+
+    echo -e "${BOLD}${CYAN}=== Deep Dive: Process Control Block (PCB) for PID $target_pid ===${NC}\n"
+    
+    local name=$(awk '/Name:/ {print $2}' "/proc/$target_pid/status" 2>/dev/null || echo "Unknown")
+    local state=$(awk '/State:/ {$1=""; print $0}' "/proc/$target_pid/status" 2>/dev/null || echo "Unknown")
+    local ppid=$(awk '/PPid:/ {print $2}' "/proc/$target_pid/status" 2>/dev/null || echo "Unknown")
+    local threads=$(awk '/Threads:/ {print $2}' "/proc/$target_pid/status" 2>/dev/null || echo "1")
+    local uid=$(awk '/Uid:/ {print $2}' "/proc/$target_pid/status" 2>/dev/null || echo "Unknown")
+    local vm_size=$(awk '/VmSize:/ {$1=""; print $0}' "/proc/$target_pid/status" 2>/dev/null || echo "0 kB")
+    local vm_rss=$(awk '/VmRSS:/ {$1=""; print $0}' "/proc/$target_pid/status" 2>/dev/null || echo "0 kB")
+    local cmdline=$(tr '\0' ' ' < "/proc/$target_pid/cmdline" 2>/dev/null || echo "N/A")
+    local fd_count=$(ls "/proc/$target_pid/fd" 2>/dev/null | wc -l || echo "0")
+
+    echo -e "${YELLOW}[PCB Metadata (/proc/$target_pid/status)]${NC}"
+    echo -e "  • Process Name (comm):    ${WHITE}$name${NC}"
+    echo -e "  • State:                  ${GREEN}$state${NC}"
+    echo -e "  • Parent Process (PPID):   ${WHITE}$ppid${NC}"
+    echo -e "  • User ID (Owner):        ${WHITE}$uid${NC}"
+    echo -e "  • Thread Count (clone):   ${WHITE}$threads${NC}"
+    echo -e "  • Open File Descriptors:  ${WHITE}$fd_count${NC}"
+    echo -e "  • Virtual Memory (VmSize):${WHITE}$vm_size${NC}"
+    echo -e "  • Resident Memory (VmRSS):${WHITE}$vm_rss${NC}"
+    echo -e "  • Command Line:           ${WHITE}$cmdline${NC}"
+
+    echo -e "\n${YELLOW}[Process vs Thread Context]${NC}"
+    echo -e "  PID $target_pid has ${WHITE}$threads thread(s)${NC} sharing the same virtual address"
+    echo -e "  space, file descriptor table, and signal handlers, scheduled independently by CFS."
+    echo ""
+}
+
+show_zombies() {
+    echo -e "${BOLD}${CYAN}=== Zombie / Defunct Process Audit ===${NC}\n"
+    local zombies=$(ps -eo pid,ppid,stat,comm | awk '$3 ~ /Z/ {print $0}')
+    if [[ -z "$zombies" ]]; then
+        echo -e "${GREEN}✓ No zombie processes found. All child processes have been reaped by their parents.${NC}\n"
+    else
+        echo -e "${RED}Found Zombie Process(es):${NC}"
+        echo "PID   PPID  STAT COMMAND"
+        echo "$zombies"
+        echo -e "\n${YELLOW}PBL Note:${NC} A zombie process has terminated via exit(), but its parent"
+        echo -e "has not yet executed wait()/waitpid() to read its termination exit code."
+    fi
+}
+
+show_general_overview() {
+    echo -e "${BOLD}${CYAN}=== KAVYA OS: Process Lifecycle & Scheduling State ===${NC}\n"
+
+    # State counts
+    local total=$(ps -ef | wc -l)
+    local running=$(ps -eo stat | grep -c '^R' || true)
+    local sleeping=$(ps -eo stat | grep -c '^[S]' || true)
+    local disk_sleep=$(ps -eo stat | grep -c '^D' || true)
+    local stopped=$(ps -eo stat | grep -c '^T' || true)
+    local zombies=$(ps -eo stat | grep -c '^Z' || true)
+
+    echo -e "${YELLOW}[1] Process State Machine (PBL Lifecycle)]${NC}"
+    echo -e "  • Total Processes:        ${WHITE}$total${NC}"
+    echo -e "  • Running / Runnable [R]: ${GREEN}$running${NC} (Actively executing on CPU or in runqueue)"
+    echo -e "  • Interruptible Sleep [S]:${WHITE}$sleeping${NC} (Waiting for I/O, event, or timer)"
+    echo -e "  • Uninterruptible [D]:    ${YELLOW}$disk_sleep${NC} (Waiting on hardware disk/NFS I/O)"
+    echo -e "  • Stopped / Suspended [T]:${WHITE}$stopped${NC} (Received SIGSTOP / SIGTSTP)"
+    echo -e "  • Zombie / Defunct [Z]:   ${RED}$zombies${NC} (Exited; waiting for parent wait() syscall)"
+
+    echo -e "\n${YELLOW}[2] Top 8 Processes by CPU & Memory (${WHITE}PCB Priority & Threads${NC})${NC}"
+    printf "${BOLD}%-7s %-7s %-5s %-4s %-5s %-5s %-7s %-25s${NC}\n" "PID" "PPID" "STAT" "NI" "%CPU" "%MEM" "THREADS" "COMMAND"
+    echo "─────────────────────────────────────────────────────────────────────────"
+    ps -eo pid,ppid,stat,nice,%cpu,%mem,nlwp,comm --sort=-%cpu | head -n 9 | tail -n 8 | while read -r p pp st ni cpu mem thr cmd; do
+        printf "%-7s %-7s %-5s %-4s %-5s %-5s %-7s %-25s\n" "$p" "$pp" "$st" "$ni" "$cpu" "$mem" "$thr" "$cmd"
+    done
+
+    echo -e "\n${BLUE}───────────────────────────────────────────────────────${NC}"
+    echo -e "To inspect an individual Process Control Block (PCB): ${BOLD}kps <PID>${NC}"
+    echo -e "To detect zombie processes: ${BOLD}kps --zombies${NC}\n"
+}
+
+case "$1" in
+    --help|-h)
+        show_help
+        ;;
+    --zombies|-z)
+        show_zombies
+        ;;
+    --tree|-t)
+        if command -v pstree >/dev/null 2>&1; then
+            pstree -p
+        else
+            ps -ef --forest
+        fi
+        ;;
+    "")
+        show_general_overview
+        ;;
+    *)
+        if [[ "$1" =~ ^[0-9]+$ ]]; then
+            inspect_pid "$1"
+        else
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+        fi
+        ;;
+esac

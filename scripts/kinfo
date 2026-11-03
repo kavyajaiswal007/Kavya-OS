@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# KAVYA OS - System Information Utility (kinfo)
+# Minimal, clean system overview with ASCII branding
+
+set -e
+
+# ANSI Color Codes
+CYAN='\033[0;36m'
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+WHITE='\033[1;37m'
+NC='\033[0m' # No Color
+BOLD='\033[1m'
+
+# Gather System Data
+HOSTNAME=$(cat /etc/hostname 2>/dev/null || hostname)
+KERNEL=$(uname -r)
+ARCH=$(uname -m)
+SHELL_NAME=$(basename "${SHELL:-bash}")
+
+# Uptime calculation
+UPTIME_SECS=$(awk '{print int($1)}' /proc/uptime 2>/dev/null || echo 0)
+DAYS=$((UPTIME_SECS / 86400))
+HOURS=$(( (UPTIME_SECS % 86400) / 3600 ))
+MINS=$(( (UPTIME_SECS % 3600) / 60 ))
+UPTIME_STR=""
+[[ $DAYS -gt 0 ]] && UPTIME_STR="${DAYS}d "
+[[ $HOURS -gt 0 ]] && UPTIME_STR+="${HOURS}h "
+UPTIME_STR+="${MINS}m"
+
+# Memory calculation (from /proc/meminfo)
+MEM_TOTAL_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
+MEM_AVAIL_KB=$(awk '/MemAvailable/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
+MEM_USED_KB=$((MEM_TOTAL_KB - MEM_AVAIL_KB))
+MEM_USED_MB=$((MEM_USED_KB / 1024))
+MEM_TOTAL_MB=$((MEM_TOTAL_KB / 1024))
+MEM_PERCENT=$(( MEM_TOTAL_KB > 0 ? (MEM_USED_KB * 100) / MEM_TOTAL_KB : 0 ))
+
+# CPU info
+CPU_MODEL=$(awk -F': ' '/model name/ {print $2; exit}' /proc/cpuinfo 2>/dev/null || echo "Generic x86_64")
+CPU_CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || echo 1)
+
+# Disk usage for root
+DISK_INFO=$(df -h / 2>/dev/null | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}')
+
+# Desktop / Window Manager
+WM="Openbox"
+[[ -n "$XDG_CURRENT_DESKTOP" ]] && WM="$XDG_CURRENT_DESKTOP"
+
+echo -e ""
+echo -e "${CYAN}      _  __     ___     ____   ____     __       ____    ____  ${NC}"
+echo -e "${CYAN}     | |/ /    /   \   |    \ |    \   /  |     /    \  / ___/ ${NC}"
+echo -e "${CYAN}     | ' /    /  ^  \  | |\  \| |\  \ /_   |   |  /\  | \___ \  ${NC}"
+echo -e "${BLUE}     | . \   /  /_\  \ | |_)  | |_)  |  |  |   |  \/  |  ___) | ${NC}"
+echo -e "${BLUE}     |_|\_\ /__/   \__\|____/ |____/   |___|    \____/  |____/  ${NC}"
+echo -e ""
+echo -e "     ${BOLD}${WHITE}KAVYA OS${NC} - Minimal Debian-Based Linux Distribution"
+echo -e "     ${BLUE}───────────────────────────────────────────────────────${NC}"
+echo -e "     ${CYAN}OS:${NC}          KAVYA OS 1.0 (Debian GNU/Linux 12 'Bookworm')"
+echo -e "     ${CYAN}Kernel:${NC}      ${KERNEL} (${ARCH})"
+echo -e "     ${CYAN}Host:${NC}        ${HOSTNAME}"
+echo -e "     ${CYAN}Uptime:${NC}      ${UPTIME_STR}"
+echo -e "     ${CYAN}Desktop:${NC}     ${WM} (Ultra-Lightweight)"
+echo -e "     ${CYAN}Shell:${NC}       ${SHELL_NAME}"
+echo -e "     ${CYAN}CPU:${NC}         ${CPU_MODEL} (${CPU_CORES} cores)"
+echo -e "     ${CYAN}Memory:${NC}      ${MEM_USED_MB}MB / ${MEM_TOTAL_MB}MB (${MEM_PERCENT}%)"
+echo -e "     ${CYAN}Storage (/):${NC} ${DISK_INFO}"
+echo -e "     ${BLUE}───────────────────────────────────────────────────────${NC}"
+echo -e "     ${YELLOW}Tip:${NC} Run ${BOLD}ksys${NC}, ${BOLD}kmem${NC}, ${BOLD}kps${NC}, ${BOLD}kschedule${NC}, or ${BOLD}khealth${NC} for OS tools."
+echo -e ""

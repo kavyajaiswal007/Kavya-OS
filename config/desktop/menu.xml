@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+  <menu id="root-menu" label="KAVYA OS">
+    <item label="Web Browser (NetSurf)">
+      <action name="Execute"><command>netsurf-gtk</command></action>
+    </item>
+    <item label="File Manager (PCManFM)">
+      <action name="Execute"><command>pcmanfm</command></action>
+    </item>
+    <item label="Terminal (LXTerminal)">
+      <action name="Execute"><command>lxterminal</command></action>
+    </item>
+    <item label="Text Editor (FeatherPad)">
+      <action name="Execute"><command>featherpad</command></action>
+    </item>
+    <item label="Calculator (Galculator)">
+      <action name="Execute"><command>galculator</command></action>
+    </item>
+    <item label="System Monitor (LXTask)">
+      <action name="Execute"><command>lxtask</command></action>
+    </item>
+    
+    <separator label="KAVYA Learning Tools" />
+    <menu id="kavya-tools" label="KAVYA OS Diagnostics">
+      <item label="System Info (kinfo)">
+        <action name="Execute"><command>lxterminal -e kinfo</command></action>
+      </item>
+      <item label="Kernel Architecture (ksys)">
+        <action name="Execute"><command>lxterminal -e ksys</command></action>
+      </item>
+      <item label="Memory Inspector (kmem)">
+        <action name="Execute"><command>lxterminal -e kmem</command></action>
+      </item>
+      <item label="Process Lifecycle (kps)">
+        <action name="Execute"><command>lxterminal -e kps</command></action>
+      </item>
+      <item label="CPU Scheduling Demo (kschedule)">
+        <action name="Execute"><command>lxterminal -e kschedule</command></action>
+      </item>
+      <item label="System Health (khealth)">
+        <action name="Execute"><command>lxterminal -e khealth</command></action>
+      </item>
+      <item label="Log Analyzer (klog)">
+        <action name="Execute"><command>lxterminal -e klog</command></action>
+      </item>
+    </menu>
+
+    <separator label="System" />
+    <menu id="settings-menu" label="Settings">
+      <item label="Appearance (LXAppearance)">
+        <action name="Execute"><command>lxappearance</command></action>
+      </item>
+      <item label="Window Manager (ObConf)">
+        <action name="Execute"><command>obconf</command></action>
+      </item>
+      <item label="Display Resolution (ARandR)">
+        <action name="Execute"><command>arandr</command></action>
+      </item>
+      <item label="Volume Control (Pavucontrol)">
+        <action name="Execute"><command>pavucontrol</command></action>
+      </item>
+    </menu>
+    <item label="Terminal (CLI Htop)">
+      <action name="Execute"><command>lxterminal -e htop</command></action>
+    </item>
+    <separator />
+    <item label="Exit / Logout">
+      <action name="Exit" />
+    </item>
+  </menu>
+</openbox_menu>

@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# KAVYA OS - CPU Scheduling Concept & Simulation (kschedule)
+# PBL Focus: CPU Scheduling Algorithms (FCFS, Round Robin, Priority, Linux CFS)
+
+set -e
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+WHITE='\033[1;37m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+BOLD='\033[1m'
+
+echo -e "${BOLD}${CYAN}=== KAVYA OS: CPU Scheduling Demonstration & Theory (kschedule) ===${NC}\n"
+
+echo -e "${YELLOW}[1] How Linux Schedules Real Processes (CFS - Completely Fair Scheduler)${NC}"
+echo -e "  • The Linux kernel does not use simple Round Robin or FIFO for user processes."
+echo -e "  • Instead, it uses the ${BOLD}Completely Fair Scheduler (CFS)${NC} backed by a ${WHITE}Red-Black Tree${NC}."
+echo -e "  • Every runnable task tracks its ${BOLD}vruntime${NC} (virtual runtime spent on the CPU)."
+echo -e "  • The task with the ${WHITE}lowest vruntime${NC} (leftmost node in the Red-Black tree) is chosen next."
+echo -e "  • Priority is adjusted with nice values (${WHITE}-20 [highest priority] to +19 [lowest priority]${NC})."
+
+echo -e "\n${YELLOW}[2] Live Kernel Scheduling Parameters${NC}"
+LATENCY=$(cat /proc/sys/kernel/sched_latency_ns 2>/dev/null || echo "N/A")
+MIN_GRAN=$(cat /proc/sys/kernel/sched_min_granularity_ns 2>/dev/null || echo "N/A")
+WAKEUP_GRAN=$(cat /proc/sys/kernel/sched_wakeup_granularity_ns 2>/dev/null || echo "N/A")
+
+if [[ "$LATENCY" != "N/A" ]]; then
+    LATENCY_MS=$((LATENCY / 1000000))
+    MIN_GRAN_MS=$((MIN_GRAN / 1000000))
+    echo -e "  • Target Latency:          ${WHITE}${LATENCY_MS} ms${NC} (Period during which all runnable tasks must run at least once)"
+    echo -e "  • Min Preemption Granularity:${WHITE}${MIN_GRAN_MS} ms${NC} (Minimum CPU time slice before preemption is allowed)"
+else
+    echo -e "  • Target Latency:          ${WHITE}6 ms (Default CFS target latency)${NC}"
+    echo -e "  • Min Granularity:         ${WHITE}0.75 ms (Default minimum time slice)${NC}"
+fi
+
+echo -e "\n${YELLOW}[3] Scheduling Algorithm Simulation: FCFS vs Round Robin (Quantum = 2)${NC}"
+echo -e "  Consider 3 processes with simulated CPU Burst times:"
+echo -e "    P1: 6 ms"
+echo -e "    P2: 3 ms"
+echo -e "    P3: 1 ms"
+echo ""
+
+echo -e "  ${BOLD}A) First-Come, First-Served (FCFS) Gantt Chart:${NC}"
+echo -e "  |====== P1 (6ms) ======|=== P2 (3ms) ===|= P3 (1ms) =|"
+echo -e "  0                      6                9            10"
+echo -e "  • Waiting Times:    P1 = 0ms, P2 = 6ms, P3 = 9ms"
+echo -e "  • Average Wait:     ${WHITE}((0 + 6 + 9) / 3) = 5.00 ms${NC}"
+echo -e "  • Turnaround Times: P1 = 6ms, P2 = 9ms, P3 = 10ms"
+echo -e "  • Avg Turnaround:   ${WHITE}((6 + 9 + 10) / 3) = 8.33 ms${NC}"
+
+echo -e "\n  ${BOLD}B) Round Robin (Time Quantum = 2ms) Gantt Chart:${NC}"
+echo -e "  |== P1 ==|== P2 ==|= P3 =|== P1 ==|= P2 =|== P1 ==|"
+echo -e "  0        2        4      5        7      8        10"
+echo -e "  • Context Switches: 5 switches (preemptive scheduling)"
+echo -e "  • Waiting Times:    P1 = 4ms, P2 = 5ms, P3 = 4ms"
+echo -e "  • Average Wait:     ${GREEN}((4 + 5 + 4) / 3) = 4.33 ms (Fairer response time!)${NC}"
+
+echo -e "\n${BLUE}───────────────────────────────────────────────────────${NC}"
+echo -e "${WHITE}Educational Takeaway:${NC} Round Robin prevents starvation and improves interactive"
+echo -e "responsiveness (crucial for GUI desktops), while CFS scales this mathematically"
+echo -e "using proportional virtual runtime weighting."
+echo ""

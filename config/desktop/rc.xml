@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <resistance><strength>10</strength><screen_edge_strength>20</screen_edge_strength></resistance>
+  <focus><focusNew>yes</focusNew><followMouse>no</followMouse></focus>
+  <placement><policy>Smart</policy><center>yes</center></placement>
+  <theme>
+    <name>Clearlooks</name>
+    <titleLayout>NLIMC</titleLayout>
+    <keepBorder>yes</keepBorder>
+    <animateIconify>yes</animateIconify>
+    <font place="ActiveWindowTitle"><name>Sans</name><size>9</size><weight>Bold</weight></font>
+    <font place="InactiveWindowTitle"><name>Sans</name><size>9</size><weight>Normal</weight></font>
+  </theme>
+  <keyboard>
+    <chainQuitKey>C-g</chainQuitKey>
+    <!-- Alt+Tab window switching -->
+    <keybind key="A-Tab">
+      <action name="NextWindow"><finalactions><action name="Focus"/><action name="Raise"/><action name="Unshade"/></finalactions></action>
+    </keybind>
+    <keybind key="A-S-Tab">
+      <action name="PreviousWindow"><finalactions><action name="Focus"/><action name="Raise"/><action name="Unshade"/></finalactions></action>
+    </keybind>
+    <!-- Close Window Alt+F4 -->
+    <keybind key="A-F4">
+      <action name="Close"/>
+    </keybind>
+    <!-- Launch Terminal Super+T or Ctrl+Alt+T -->
+    <keybind key="W-t">
+      <action name="Execute"><command>lxterminal</command></action>
+    </keybind>
+    <keybind key="C-A-t">
+      <action name="Execute"><command>lxterminal</command></action>
+    </keybind>
+    <!-- Launch File Manager Super+E -->
+    <keybind key="W-e">
+      <action name="Execute"><command>pcmanfm</command></action>
+    </keybind>
+    <!-- Root Menu on Super / Windows key -->
+    <keybind key="W-space">
+      <action name="ShowMenu"><menu>root-menu</menu></action>
+    </keybind>
+  </keyboard>
+  <mouse>
+    <dragThreshold>8</dragThreshold>
+    <doubleClickTime>500</doubleClickTime>
+    <!-- Root window right click shows menu -->
+    <context name="Root">
+      <mousebind button="Right" action="Press">
+        <action name="ShowMenu"><menu>root-menu</menu></action>
+      </mousebind>
+    </context>
+  </mouse>
+</openbox_config>

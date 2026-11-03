@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# KAVYA OS - System Architecture & Kernel Inspector (ksys)
+
+set -e
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+WHITE='\033[1;37m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+BOLD='\033[1m'
+
+echo -e "${BOLD}${CYAN}=== KAVYA OS: System & Kernel Architecture (ksys) ===${NC}\n"
+
+# 1. Kernel Architecture
+echo -e "${YELLOW}[1] Linux Kernel & Architecture${NC}"
+echo -e "  • Kernel Release:    ${WHITE}$(uname -r)${NC}"
+echo -e "  • Kernel Version:    ${WHITE}$(uname -v)${NC}"
+echo -e "  • Architecture:      ${WHITE}$(uname -m)${NC}"
+echo -e "  • Hostname:          ${WHITE}$(uname -n)${NC}"
+echo -e "  • Operating System:  ${WHITE}$(uname -o)${NC}"
+
+# 2. System Load & Boot Time
+echo -e "\n${YELLOW}[2] System Load & Boot Metrics${NC}"
+LOAD=$(cat /proc/loadavg 2>/dev/null || echo "N/A")
+echo -e "  • Load Average:      ${WHITE}${LOAD}${NC} (1m, 5m, 15m)"
+if command -v systemd-analyze >/dev/null 2>&1; then
+    STARTUP=$(systemd-analyze time 2>/dev/null || echo "N/A")
+    echo -e "  • Startup Time:      ${WHITE}${STARTUP}${NC}"
+fi
+
+# 3. CPU Architecture Details
+echo -e "\n${YELLOW}[3] CPU Architecture & Capabilities${NC}"
+CPU_MODEL=$(awk -F': ' '/model name/ {print $2; exit}' /proc/cpuinfo 2>/dev/null || echo "Unknown")
+CPU_CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || echo 1)
+CPU_MHZ=$(awk -F': ' '/cpu MHz/ {print $2; exit}' /proc/cpuinfo 2>/dev/null || echo "N/A")
+echo -e "  • Model:             ${WHITE}${CPU_MODEL}${NC}"
+echo -e "  • Total Cores:       ${WHITE}${CPU_CORES}${NC}"
+echo -e "  • Current Frequency: ${WHITE}${CPU_MHZ} MHz${NC}"
+
+# 4. Critical Kernel Parameters (sysctl)
+echo -e "\n${YELLOW}[4] Key Kernel Virtual Memory Parameters${NC}"
+SWAPPINESS=$(cat /proc/sys/vm/swappiness 2>/dev/null || echo "N/A")
+DIRTY_RATIO=$(cat /proc/sys/vm/dirty_ratio 2>/dev/null || echo "N/A")
+VFS_PRESSURE=$(cat /proc/sys/vm/vfs_cache_pressure 2>/dev/null || echo "N/A")
+echo -e "  • vm.swappiness:         ${WHITE}${SWAPPINESS}${NC} (tendency to swap RAM pages to disk)"
+echo -e "  • vm.dirty_ratio:        ${WHITE}${DIRTY_RATIO}%${NC} (max unwritten page cache before sync)"
+echo -e "  • vm.vfs_cache_pressure: ${WHITE}${VFS_PRESSURE}${NC} (reclaiming inode/dentry caches)"
+
+# 5. Essential System Services
+echo -e "\n${YELLOW}[5] Core Systemd Services${NC}"
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl list-units --type=service --state=running --no-pager --no-legend 2>/dev/null | head -n 8 | awk '{printf "  • %-30s [%s]\n", $1, $3}' || echo "  (Services list unavailable in non-systemd environment)"
+else
+    echo "  (systemctl not running or live container mode)"
+fi
+
+echo -e "\n${BLUE}───────────────────────────────────────────────────────${NC}"
+echo -e "Run ${BOLD}kmem${NC} for memory analysis or ${BOLD}kps${NC} for process lifecycle inspection.\n"

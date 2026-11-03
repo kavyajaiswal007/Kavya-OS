@@ -1,0 +1,32 @@
+# KAVYA OS - Core System Packages
+# Minimum required for Debian live kernel, boot, systemd, and hardware
+
+linux-image-amd64
+live-boot
+live-config
+live-config-systemd
+systemd
+systemd-sysv
+dbus
+dbus-x11
+udev
+kmod
+pciutils
+usbutils
+iproute2
+isc-dhcp-client
+network-manager
+wpasupplicant
+# Network & Hardware Drivers
+# Using free firmware; virtual machines (VirtualBox, QEMU, VMware) use emulated
+# Intel/VirtIO/PCnet NICs which are natively supported by the kernel without proprietary blobs.
+firmware-linux-free
+sudo
+locales
+ca-certificates
+curl
+wget
+tar
+gzip
+xz-utils
+bzip2

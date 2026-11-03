@@ -1,0 +1,10 @@
+# KAVYA OS - OS Learning & Diagnostics Utilities
+# For PBL alignment: Process Lifecycle, Scheduling, Memory, System Monitoring
+
+procps
+psmisc
+sysstat
+bc
+jq
+net-tools
+iputils-ping

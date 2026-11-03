@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# KAVYA OS - Memory & Virtual Memory Inspector (kmem)
+# PBL Focus: Physical RAM, Virtual Memory, Page Cache, Buffers, Swap
+
+set -e
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+WHITE='\033[1;37m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+BOLD='\033[1m'
+
+echo -e "${BOLD}${CYAN}=== KAVYA OS: Memory & Virtual Memory Subsystem (kmem) ===${NC}\n"
+
+# Read /proc/meminfo
+declare -A MEM
+while read -r key val _; do
+    key="${key%:}"
+    MEM["$key"]="$val"
+done < /proc/meminfo
+
+TOTAL_KB=${MEM["MemTotal"]:-0}
+FREE_KB=${MEM["MemFree"]:-0}
+AVAIL_KB=${MEM["MemAvailable"]:-0}
+BUFFERS_KB=${MEM["Buffers"]:-0}
+CACHED_KB=${MEM["Cached"]:-0}
+SWAP_TOTAL_KB=${MEM["SwapTotal"]:-0}
+SWAP_FREE_KB=${MEM["SwapFree"]:-0}
+DIRTY_KB=${MEM["Dirty"]:-0}
+ACTIVE_KB=${MEM["Active"]:-0}
+INACTIVE_KB=${MEM["Inactive"]:-0}
+
+USED_KB=$((TOTAL_KB - AVAIL_KB))
+SWAP_USED_KB=$((SWAP_TOTAL_KB - SWAP_FREE_KB))
+
+kb_to_mb() {
+    echo "$(( $1 / 1024 ))"
+}
+
+# Progress bar generator
+draw_bar() {
+    local percent=$1
+    local width=30
+    local filled=$(( (percent * width) / 100 ))
+    local empty=$(( width - filled ))
+    printf "["
+    for ((i=0; i<filled; i++)); do printf "#"; done
+    for ((i=0; i<empty; i++)); do printf "-"; done
+    printf "] %3d%%" "$percent"
+}
+
+TOTAL_MB=$(kb_to_mb "$TOTAL_KB")
+USED_MB=$(kb_to_mb "$USED_KB")
+AVAIL_MB=$(kb_to_mb "$AVAIL_KB")
+FREE_MB=$(kb_to_mb "$FREE_KB")
+BUFFERS_MB=$(kb_to_mb "$BUFFERS_KB")
+CACHED_MB=$(kb_to_mb "$CACHED_KB")
+DIRTY_MB=$(kb_to_mb "$DIRTY_KB")
+
+MEM_PCT=$(( TOTAL_KB > 0 ? (USED_KB * 100) / TOTAL_KB : 0 ))
+
+echo -e "${YELLOW}[1] Physical RAM Utilization${NC}"
+echo -e "  Total Installed:   ${WHITE}${TOTAL_MB} MB${NC}"
+echo -e "  In Use (Apps):     ${WHITE}${USED_MB} MB${NC}"
+echo -e "  Available (Safe):  ${WHITE}${AVAIL_MB} MB${NC}"
+echo -e "  Completely Free:   ${WHITE}${FREE_MB} MB${NC}"
+echo -n "  Usage:             "
+draw_bar "$MEM_PCT"
+echo -e "\n"
+
+echo -e "${YELLOW}[2] Page Cache & VFS Buffers (Linux Paging Architecture)${NC}"
+echo -e "  • Page Cache:      ${WHITE}${CACHED_MB} MB${NC} (Cached disk files kept in RAM for instant reads)"
+echo -e "  • Block Buffers:   ${WHITE}${BUFFERS_MB} MB${NC} (Raw block I/O filesystem metadata buffers)"
+echo -e "  • Dirty Memory:    ${WHITE}${DIRTY_MB} MB${NC} (RAM pages waiting to be written to storage via pdflush/flush)"
+echo -e "  • Active Pages:    ${WHITE}$(kb_to_mb "$ACTIVE_KB") MB${NC} (Recently accessed memory, protected from reclamation)"
+echo -e "  • Inactive Pages:  ${WHITE}$(kb_to_mb "$INACTIVE_KB") MB${NC} (Eligible for reclamation/paging under pressure)"
+
+echo -e "\n${YELLOW}[3] Virtual Memory & Swap Subsystem${NC}"
+if [[ $SWAP_TOTAL_KB -gt 0 ]]; then
+    SWAP_TOTAL_MB=$(kb_to_mb "$SWAP_TOTAL_KB")
+    SWAP_USED_MB=$(kb_to_mb "$SWAP_USED_KB")
+    SWAP_PCT=$(( (SWAP_USED_KB * 100) / SWAP_TOTAL_KB ))
+    echo -e "  • Swap Total:      ${WHITE}${SWAP_TOTAL_MB} MB${NC}"
+    echo -e "  • Swap In Use:     ${WHITE}${SWAP_USED_MB} MB${NC}"
+    echo -n "  • Swap Load:       "
+    draw_bar "$SWAP_PCT"
+    echo -e ""
+else
+    echo -e "  • Swap Space:      ${YELLOW}Disabled or none configured (Standard for live minimal boot)${NC}"
+fi
+
+echo -e "\n${BLUE}───────────────────────────────────────────────────────${NC}"
+echo -e "${WHITE}Educational Concept:${NC} Linux maximizes efficiency by using all idle RAM"
+echo -e "for Page Cache and Buffers. Unused RAM is wasted RAM. If an app requests"
+echo -e "more memory, the Linux kernel instantly frees cached memory without swapping."
+echo -e ""

@@ -1,0 +1,54 @@
+# KAVYA OS - Minimal Desktop Packages (Option A: Openbox + Tint2 + PCManFM)
+# Ultra-lightweight: strictly the 7 essential apps, no duplicates or bloat
+
+# X11 Display Server
+xserver-xorg-core
+xserver-xorg-video-all
+xserver-xorg-input-all
+xinit
+
+# Window Manager & Panel
+openbox
+tint2
+nitrogen
+lightdm
+lightdm-gtk-greeter
+policykit-1-gnome
+
+# Audio Subsystem
+alsa-utils
+pulseaudio
+pavucontrol
+
+# The 7 Essential Applications
+# 1. Settings
+lxappearance
+obconf
+arandr
+
+# 2. File Manager
+pcmanfm
+
+# 3. Terminal
+lxterminal
+
+# VirtualBox, QEMU & Virtualization Display Drivers
+xserver-xorg-video-vmware
+xserver-xorg-video-vesa
+xserver-xorg-video-fbdev
+x11-xserver-utils
+spice-vdagent
+
+# 4. Web Browser (Ultra-lightweight NetSurf GTK)
+netsurf-gtk
+
+# 5. Text Editor
+featherpad
+nano
+
+# 6. Calculator
+galculator
+
+# 7. System Monitor
+lxtask
+htop

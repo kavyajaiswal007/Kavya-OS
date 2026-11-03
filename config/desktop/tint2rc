@@ -1,0 +1,90 @@
+# KAVYA OS - Tint2 Panel Configuration
+# Clean, modern, ultra-lightweight bottom panel
+
+# Background 1: Panel
+rounded = 0
+border_width = 1
+background_color = #1a1b26 100
+border_color = #24283b 100
+
+# Background 2: Default task
+rounded = 4
+border_width = 1
+background_color = #24283b 80
+border_color = #414868 100
+
+# Background 3: Active task
+rounded = 4
+border_width = 1
+background_color = #7aa2f7 90
+border_color = #bb9af7 100
+
+# Background 4: Urgent task
+rounded = 4
+border_width = 1
+background_color = #f7768e 100
+border_color = #f7768e 100
+
+# Panel
+panel_monitor = all
+panel_position = bottom center horizontal
+panel_size = 100% 36
+panel_margin = 0 0
+panel_padding = 6 2 6
+panel_background_id = 1
+panel_layer = top
+panel_dock = 0
+strut_policy = follow_size
+
+# Taskbar
+taskbar_mode = single_desktop
+taskbar_padding = 4 2 4
+taskbar_background_id = 0
+taskbar_active_background_id = 0
+taskbar_name = 0
+taskbar_hide_inactive_tasks = 0
+taskbar_hide_different_monitor = 0
+taskbar_always_show_all_desktop_tasks = 1
+taskbar_sort_order = none
+
+# Tasks
+task_icon = 1
+task_text = 1
+task_centered = 1
+task_maximum_size = 180 30
+task_padding = 4 2
+task_font = Sans 9
+task_font_color = #c0caf5 100
+task_active_font_color = #1a1b26 100
+task_background_id = 2
+task_active_background_id = 3
+task_urgent_background_id = 4
+
+# Clock
+time1_format = %H:%M  •  %d %b %Y
+time1_font = Sans Bold 9
+clock_font_color = #7aa2f7 100
+clock_padding = 6 2
+clock_background_id = 0
+clock_lclick_command = galculator
+
+# Launchers
+launcher_padding = 4 2
+launcher_background_id = 0
+launcher_icon_size = 22
+launcher_item_app = /usr/share/applications/falkon.desktop
+launcher_item_app = /usr/share/applications/pcmanfm.desktop
+launcher_item_app = /usr/share/applications/lxterminal.desktop
+launcher_item_app = /usr/share/applications/featherpad.desktop
+launcher_item_app = /usr/share/applications/lxtask.desktop
+
+# System Tray
+systray_padding = 4 2 4
+systray_background_id = 0
+systray_sort = ascending
+systray_icon_size = 20
+systray_icon_as_is = 0
+
+# Order of elements in panel
+# L = Launchers, T = Taskbar, S = Systray, C = Clock
+panel_items = LTSC

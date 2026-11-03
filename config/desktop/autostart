@@ -1,0 +1,22 @@
+# KAVYA OS - Openbox Autostart Script
+# Runs upon graphical login
+
+# Restore custom KAVYA OS wallpaper
+if [ -f /usr/share/backgrounds/kavya-os/wallpaper.png ]; then
+    nitrogen --set-scaled /usr/share/backgrounds/kavya-os/wallpaper.png &
+elif [ -f /usr/share/backgrounds/kavya-os/wallpaper.svg ]; then
+    nitrogen --set-scaled /usr/share/backgrounds/kavya-os/wallpaper.svg &
+fi
+
+# Launch Tint2 lightweight panel
+tint2 &
+
+# Launch SPICE VDAgent for dynamic resolution & clipboard auto-resizing
+if command -v spice-vdagent >/dev/null 2>&1; then
+    spice-vdagent &
+fi
+
+# Launch Polkit authentication agent
+if [ -x /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 ]; then
+    /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
+fi
